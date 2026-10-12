@@ -1,0 +1,4 @@
+{
+  "namespace": "RussellAutoCartographer",
+  "setup": "setup.mjs"
+}
