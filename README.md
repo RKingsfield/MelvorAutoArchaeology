@@ -1,42 +1,76 @@
-# Auto Cartographer v1.0.0
+# Auto Archaeology v1.0.0
 
-Auto Cartographer automates Cartography dig-site map progression in Melvor Idle.
+Companion mod for Auto Cartographer.
 
-## Features
+Initial stable release after multi-day offline stress testing of all three automation modes.
 
-- Continues upgrading non-Perfect maps at the current dig site.
-- Moves on to the next discovered/unlocked dig site when the current one is complete.
-- Automatically creates missing dig-site maps using vanilla map-creation costs.
-- Automatically switches to Paper Making when Paper is required, then returns to the exact interrupted map.
-- Survives save/reload while an automatic Paper refill is in progress, including cases where Cartography restores as stopped.
-- Configurable Paper log priority with enable/disable controls and fallback between enabled log types.
-- Works during online and offline progression.
-- Reports Auto Cartographer actions in the normal offline recap, including:
-  - cross-site movement;
-  - created maps;
-  - Paper-making refill cycles;
-  - Paper log fallback changes;
-  - map upgrade counts and tier improvements for maps vanilla would otherwise omit.
+## Modes
 
-## Settings
+Auto Archaeology uses a single **Mode** dropdown:
 
-### General
+- **Discovery** — hunt permanently undiscovered Archaeology items and enable only the Tiny / Small / Medium / Large tools that can still find something new.
+- **Restock** — farm selected Archaeology consumables until all usable charged maps at their source sites are exhausted.
+- **Use All Maps** — burn every charged Archaeology map across all available dig sites.
 
-- **Enable Auto Cartographer** — enables/disables automation.
-- **Automatically create missing maps** — fills empty map slots using normal vanilla costs.
+**Discovery is the default mode.** Restock starts with no items selected so it is always an explicit opt-in.
 
-### Paper Production
+## Discovery
 
-- **Automatically make Paper when required** — temporarily switches to Paper Making when needed.
-- **Paper to make per refill** — default **1000**. Changes apply to an in-progress refill.
-- **Paper log priority** — configure the ordered fallback list of Normal, Oak, Teak, Mahogany, Maple, Yew and Magic Logs, with individual log types optionally disabled.
+Discovery uses Melvor's permanent discovery statistic (`game.stats.itemFindCount(item)`) rather than current bank contents. It:
 
-## Notes
+- enables only artefact sizes containing something still undiscovered;
+- disables a size as soon as that category is complete;
+- leaves remaining map charges untouched when a site becomes discovery-complete;
+- skips already-complete sites;
+- circles the full dig-site list before deciding no eligible work remains.
 
-Auto Cartographer treats Paper Making that it started as a managed temporary action. That recovery instruction persists across logins until the interrupted map is resumed. If the player deliberately changes Cartography to another active action, Auto Cartographer yields control rather than hijacking it.
+## Restock
 
-For Creator Toolkit/local development builds, a browser-local fallback is used alongside `characterStorage` so managed Paper recovery and Paper-log configuration survive the local-mod save-loading behaviour observed during development.
+The Restock target list is generated from the live Archaeology drop tables. Only Archaeology drops whose item type is `Consumable` are offered.
 
-## Release
+For selected targets, Restock:
 
-v1.0.0 is the first release candidate promoted from the tested v0.3.15 build. The automation engine is the proven v0.3.12 state machine; later development changed reporting only. The release default for Paper refills has been restored from the temporary test value of 100 to **1000**.
+- enables only artefact sizes that can drop a selected item;
+- farms every eligible charged source site;
+- wraps through the full dig-site list before stopping;
+- reports net bank gains per selected target and which source sites need more maps.
+
+## Use All Maps
+
+Use All Maps deliberately ignores discovery and target filtering. It:
+
+- consumes every charged map at the current site;
+- moves through every available Archaeology site;
+- wraps from the end of the list back to the beginning;
+- stops only after one full circular pass finds no charged maps anywhere.
+
+The internal mode value remains `continue` for compatibility with the existing state machine.
+
+## Offline reporting
+
+Auto Archaeology adds compact summaries to Melvor's normal **While You Were Away** recap.
+
+- **Discovery** groups completed artefact sizes, site completion, remaining charges, skipped complete sites and sites that need maps.
+- **Restock** reports each selected target's net bank change and source-site outcome, plus exhausted maps and source sites needing maps.
+- **Use All Maps** reports only how many maps were exhausted across how many dig sites, plus the final/stop state.
+
+The detailed chronological event trail remains available internally through the mod API for diagnostics.
+
+## Notifications
+
+Blocking stop/completion popups are suppressed during offline processing. The offline recap contains the reason instead. During online play, stop/completion information uses a small non-blocking toast.
+
+## Implementation notes
+
+- State transitions run at `Game.tick.after`, matching the proven Auto Cartographer architecture and working during offline simulation.
+- Exact pre-action site/map capture prevents vanilla clearing `currentDigSite` from accidentally resetting route progression.
+- All three modes use the same safe one-lap circular site traversal.
+- The native Archaeology offline recap integration remains in use.
+- Restock targets come from live Archaeology drop tables rather than a hard-coded item list.
+
+## Release-candidate defaults
+
+The RC uses fresh settings keys so temporary stress-test defaults from v0.2.x do not carry over unexpectedly:
+
+- Mode defaults to **Discovery**.
+- Restock targets default to **none selected**.

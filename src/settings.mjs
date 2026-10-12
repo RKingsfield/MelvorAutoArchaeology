@@ -1,59 +1,50 @@
-export const LOG_SETTINGS = [
-  ["normal", "Normal Logs"],
-  ["oak", "Oak Logs"],
-  ["teak", "Teak Logs"],
-  ["mahogany", "Mahogany Logs"],
-  ["maple", "Maple Logs"],
-  ["yew", "Yew Logs"],
-  ["magic", "Magic Logs"],
-];
-
-export function setupGeneralSettings(ctx, onConfigurePaperLogs) {
+export function setupGeneralSettings(
+  ctx,
+  restockOptions = [],
+  defaultRestockTargets = [],
+  onModeChange = () => {},
+  onRestockTargetsChange = () => {}
+) {
   const GENERAL = ctx.settings.section("General");
-  const PAPER = ctx.settings.section("Paper Production");
 
   GENERAL.add({
     type: "switch",
     name: "enabled",
-    label: "Enable Auto Cartographer",
-    hint: "Automatically continue through maps and dig sites when a map reaches Perfect.",
+    label: "Enable Auto Archaeology",
+    hint: "Automatically manage Archaeology maps, sites and tools according to the selected mode.",
     default: true,
   });
 
   GENERAL.add({
-    type: "switch",
-    name: "create-missing-maps",
-    label: "Automatically create missing maps",
-    hint: "Fill empty map slots using the normal vanilla map-creation cost.",
-    default: true,
-  });
-
-  PAPER.add({
-    type: "switch",
-    name: "auto-make-paper",
-    label: "Automatically make Paper when required",
-    hint: "Temporarily switch Cartography to Paper Making, then return to the interrupted map.",
-    default: true,
-  });
-
-  PAPER.add({
-    type: "number",
-    name: "paper-refill-amount",
-    label: "Paper to make per refill",
-    hint: "How much additional Paper to make when Auto Cartographer runs out. Changes apply to a refill already in progress. Default: 1000.",
-    default: 1000,
-  });
-
-  // Current production Melvor mods use the native settings button type.
-  PAPER.add({
-    type: "button",
-    name: "configure-paper-logs",
-    display: "Configure",
-    label: "Paper log priority",
-    onClick() {
-      onConfigurePaperLogs();
+    type: "dropdown",
+    name: "mode-v100rc1",
+    label: "Mode",
+    hint: "Discovery hunts permanently undiscovered artefacts. Restock farms selected Archaeology consumables. Use All Maps burns every charged Archaeology map. All modes safely circle the dig-site list before stopping.",
+    default: "discovery",
+    color: "primary",
+    options: [
+      { value: "continue", display: "Use All Maps" },
+      { value: "discovery", display: "Discovery" },
+      { value: "restock", display: "Restock" },
+    ],
+    onChange(value, previousValue) {
+      onModeChange(value, previousValue);
     },
   });
 
-  return { GENERAL, PAPER, LOG_SETTINGS };
+  const RESTOCK = ctx.settings.section("Restock Mode");
+
+  RESTOCK.add({
+    type: "checkbox-group",
+    name: "restock-targets-v100rc1",
+    label: "Consumables to restock",
+    hint: "Select the Archaeology consumables to farm. Restock enables only relevant artefact sizes and visits every charged source site before stopping.",
+    default: defaultRestockTargets,
+    options: restockOptions,
+    onChange(value, previousValue) {
+      onRestockTargetsChange(value, previousValue);
+    },
+  });
+
+  return { GENERAL, RESTOCK };
 }
